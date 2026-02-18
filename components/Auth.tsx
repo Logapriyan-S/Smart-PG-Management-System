@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { User, UserRole } from '../types';
+import loginBg from '../assets/pg1.jpg';
 
 interface AuthProps {
   onLogin: (user: User) => void;
@@ -32,7 +33,6 @@ const Auth: React.FC<AuthProps> = ({ onLogin }) => {
     setIsLoading(true);
 
     try {
-      /* ------------ LOGIN ------------ */
       if (isLogin) {
         const res = await fetch('/api/login', {
           method: 'POST',
@@ -45,17 +45,13 @@ const Auth: React.FC<AuthProps> = ({ onLogin }) => {
         });
 
         const data = await res.json();
-
         if (!res.ok) {
           setError(data.error || 'Login failed');
           return;
         }
 
         onLogin(data);
-      }
-
-      /* ------------ REGISTER ------------ */
-      else {
+      } else {
         if (formData.password !== formData.confirmPassword) {
           setError('Passwords do not match');
           return;
@@ -68,7 +64,6 @@ const Auth: React.FC<AuthProps> = ({ onLogin }) => {
         });
 
         const data = await res.json();
-
         if (!res.ok) {
           setError(data.error || 'Registration failed');
           return;
@@ -85,51 +80,62 @@ const Auth: React.FC<AuthProps> = ({ onLogin }) => {
   };
 
   return (
-    <div className="min-h-screen grid grid-cols-1 md:grid-cols-2 bg-stone-100">
+    <div className="min-h-screen flex">
 
-      {/* ================================================= */}
-      {/* LEFT IMAGE (PERMANENT WATERMARK FIX VERSION) */}
-      {/* ================================================= */}
-      <div className="hidden md:block overflow-hidden">
-  <img
-    src="https://lh3.googleusercontent.com/p/AF1QipPFKE6_3Y8U_MnsazRDIYrSY6YDYCKGXjc4U8n_=s1360-w1360-h1020-rw"
-    alt="PG Entrance"
-    className="h-full w-full object-cover object-top scale-150"
-  />
-</div>
+      {/* ================= LEFT IMAGE ================= */}
+      <div
+        className="hidden md:block w-1/2 relative bg-cover bg-center"
+        style={{ backgroundImage: `url(${loginBg})` }}
+      >
+        {/* Premium dark gradient overlay */}
+        <div className="absolute inset-0 bg-gradient-to-r from-black/70 to-black/30"></div>
 
-      {/* ================================================= */}
-      {/* RIGHT FORM */}
-      {/* ================================================= */}
-      <div className="flex items-center justify-center p-8">
+        {/* Branding text */}
+        <div className="absolute bottom-16 left-16 text-white max-w-sm">
+          <h2 className="text-4xl font-bold mb-4">Welcome to Smart PG</h2>
+          <p className="text-stone-200 text-lg">
+            Manage residents, payments, complaints and everything —
+            all in one smart platform.
+          </p>
+        </div>
+      </div>
+
+      {/* ================= RIGHT SIDE ================= */}
+      <div className="flex w-full md:w-1/2 items-center justify-center bg-gradient-to-br from-stone-100 to-stone-200 p-8">
 
         <div className="w-full max-w-md">
 
-          <h1 className="text-3xl font-bold text-stone-800 text-center mb-8">
-            Smart PG
-          </h1>
+          <div className="text-center mb-10">
+            <h1 className="text-3xl font-bold text-stone-800">
+              Smart PG Portal
+            </h1>
+            <p className="text-stone-500 mt-2">
+              Secure access to your dashboard
+            </p>
+          </div>
 
           <form
             onSubmit={handleSubmit}
             className="
-              bg-white
+              backdrop-blur-xl
+              bg-white/70
               p-8
-              rounded-2xl
-              shadow-xl
-              border border-stone-200
-              space-y-4
+              rounded-3xl
+              shadow-2xl
+              border border-white/40
+              space-y-5
             "
           >
 
-            {/* Role selector */}
-            <div className="flex rounded-xl overflow-hidden mb-4">
+            {/* Role Selector */}
+            <div className="flex rounded-full bg-stone-200 p-1">
               <button
                 type="button"
                 onClick={() => handleRoleChange(UserRole.RESIDENT)}
-                className={`flex-1 p-3 font-semibold transition ${
+                className={`flex-1 py-2 rounded-full text-sm font-semibold transition ${
                   activeRole === UserRole.RESIDENT
-                    ? 'bg-amber-700 text-white'
-                    : 'bg-stone-200 text-stone-700'
+                    ? 'bg-amber-700 text-white shadow-md'
+                    : 'text-stone-600'
                 }`}
               >
                 Resident
@@ -138,10 +144,10 @@ const Auth: React.FC<AuthProps> = ({ onLogin }) => {
               <button
                 type="button"
                 onClick={() => handleRoleChange(UserRole.ADMIN)}
-                className={`flex-1 p-3 font-semibold transition ${
+                className={`flex-1 py-2 rounded-full text-sm font-semibold transition ${
                   activeRole === UserRole.ADMIN
-                    ? 'bg-amber-700 text-white'
-                    : 'bg-stone-200 text-stone-700'
+                    ? 'bg-amber-700 text-white shadow-md'
+                    : 'text-stone-600'
                 }`}
               >
                 Owner / Admin
@@ -151,8 +157,8 @@ const Auth: React.FC<AuthProps> = ({ onLogin }) => {
             {/* Email */}
             <input
               type="email"
-              placeholder="Email"
-              className="w-full p-3 border border-stone-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-600"
+              placeholder="Email address"
+              className="w-full p-3 rounded-xl bg-white border border-stone-300 focus:ring-2 focus:ring-amber-600 outline-none transition"
               value={formData.email}
               onChange={e =>
                 setFormData({ ...formData, email: e.target.value })
@@ -164,7 +170,7 @@ const Auth: React.FC<AuthProps> = ({ onLogin }) => {
             <input
               type="password"
               placeholder="Password"
-              className="w-full p-3 border border-stone-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-600"
+              className="w-full p-3 rounded-xl bg-white border border-stone-300 focus:ring-2 focus:ring-amber-600 outline-none transition"
               value={formData.password}
               onChange={e =>
                 setFormData({ ...formData, password: e.target.value })
@@ -173,7 +179,7 @@ const Auth: React.FC<AuthProps> = ({ onLogin }) => {
             />
 
             {error && (
-              <p className="text-red-600 text-sm font-semibold">{error}</p>
+              <p className="text-red-600 text-sm font-medium">{error}</p>
             )}
 
             <button
@@ -184,9 +190,10 @@ const Auth: React.FC<AuthProps> = ({ onLogin }) => {
                 bg-amber-700
                 hover:bg-amber-800
                 text-white
-                p-3
+                py-3
                 rounded-xl
                 font-semibold
+                shadow-lg
                 transition
               "
             >
@@ -194,10 +201,10 @@ const Auth: React.FC<AuthProps> = ({ onLogin }) => {
             </button>
 
             {activeRole === UserRole.RESIDENT && (
-              <p className="text-center text-sm mt-2 text-stone-700">
+              <p className="text-center text-sm text-stone-600">
                 {isLogin ? (
                   <>
-                    Don&apos;t have an account?{' '}
+                    Don't have an account?{' '}
                     <button
                       type="button"
                       onClick={() => setIsLogin(false)}
@@ -220,6 +227,7 @@ const Auth: React.FC<AuthProps> = ({ onLogin }) => {
                 )}
               </p>
             )}
+
           </form>
         </div>
       </div>
