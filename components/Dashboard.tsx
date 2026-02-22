@@ -119,7 +119,7 @@ const Dashboard: React.FC<DashboardProps> = ({
           </div>
         </div>
 
-        {/* RIGHT PANEL: ASSISTANT CARD */}
+        {/* RIGHT PANEL: QUICK ACTIONS */}
         <div className="bg-gradient-to-b from-[#0A0F1D] to-[#050917] rounded-[2rem] p-8 border border-[#D4AF37]/20 flex flex-col justify-between shadow-2xl relative overflow-hidden group h-full">
           {/* Decorative glow */}
           <div className="absolute top-0 right-0 w-32 h-32 bg-[#D4AF37]/10 rounded-full blur-[50px] pointer-events-none" />
@@ -130,17 +130,17 @@ const Dashboard: React.FC<DashboardProps> = ({
                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
                </svg>
             </div>
-            <h3 className="text-lg md:text-xl font-bold text-white mb-3">PG Digital Assistant</h3>
+            <h3 className="text-lg md:text-xl font-bold text-white mb-3">Quick Actions</h3>
             <p className="text-slate-400 text-sm font-light leading-relaxed">
-              Instant access to room services, menu requests, and facility help. Our concierge is here to assist you 24/7.
+              Use the complaints and notice sections to report issues and stay updated with PG announcements.
             </p>
           </div>
 
           <button
-            onClick={() => onNavigate('chat')}
+            onClick={() => onNavigate('complaints')}
             className="mt-8 bg-gradient-to-r from-[#D4AF37] via-[#F3E5AB] to-[#AA771C] hover:scale-[1.02] active:scale-95 text-[#030614] py-4 rounded-xl font-bold tracking-[0.15em] uppercase text-[10px] transition-all w-full shadow-lg"
           >
-            Initiate Concierge
+            Open Complaints
           </button>
         </div>
       </div>
@@ -149,3 +149,5 @@ const Dashboard: React.FC<DashboardProps> = ({
 };
 
 export default Dashboard;
+
+

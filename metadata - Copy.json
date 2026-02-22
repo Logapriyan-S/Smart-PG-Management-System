@@ -1,6 +1,6 @@
 {
   "name": "Smart PG Management System",
-  "description": "A comprehensive web-based application for automating PG operations including complaint handling, notice management, and an AI-powered resident support chatbot.",
+  "description": "A comprehensive web-based application for automating PG operations including complaint handling, notice management.",
   "requestFramePermissions": [
     "microphone"
   ]

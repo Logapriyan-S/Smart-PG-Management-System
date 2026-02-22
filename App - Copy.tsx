@@ -5,7 +5,6 @@ import Auth from './components/Auth.tsx';
 import Dashboard from './components/Dashboard.tsx';
 import Complaints from './components/Complaints.tsx';
 import Notices from './components/Notices.tsx';
-import Chatbot from './components/Chatbot.tsx';
 import Layout from './components/Layout.tsx';
 import ResidentList from './components/ResidentList.tsx';
 import FoodMenu from './components/FoodMenu.tsx';
@@ -13,7 +12,7 @@ import Profile from './components/Profile.tsx';
 
 const App: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'complaints' | 'notices' | 'chat' | 'residents' | 'food' | 'profile'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'complaints' | 'notices' | 'residents' | 'food' | 'profile'>('dashboard');
   const [complaints, setComplaints] = useState<Complaint[]>([]);
   const [notices, setNotices] = useState<Notice[]>([]);
   const [residents, setResidents] = useState<User[]>([]);
@@ -164,7 +163,6 @@ const App: React.FC = () => {
           onAdd={addNotice} 
         />
       )}
-      {activeTab === 'chat' && <Chatbot />}
       {activeTab === 'food' && foodMenu && (
         <FoodMenu 
           user={currentUser} 
@@ -188,3 +186,4 @@ const App: React.FC = () => {
 };
 
 export default App;
+

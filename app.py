@@ -15,7 +15,6 @@ CORS(app)
 
 # Define database path
 DB_PATH = 'database.json'
-GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
 
 # --- DATABASE HELPERS ---
 def load_db():
@@ -39,13 +38,6 @@ def save_db(data):
         json.dump(data, f, indent=4)
 
 # --- API ROUTES ---
-
-@app.route('/api/chat', methods=['POST'])
-def chat():
-    if not GEMINI_API_KEY:
-        return jsonify({"error": "AI API Key not configured"}), 500
-    user_message = request.json.get('message')
-    return jsonify({"reply": f"Backend received: {user_message}. AI Logic connected."})
 
 @app.route('/api/login', methods=['POST'])
 def login():

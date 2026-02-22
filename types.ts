@@ -57,9 +57,4 @@ export interface Notice {
   createdAt: string;
 }
 
-export interface ChatMessage {
-  id: string;
-  text: string;
-  sender: 'user' | 'ai';
-  timestamp: string;
-}
+

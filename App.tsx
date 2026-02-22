@@ -7,7 +7,6 @@ import ResidentList from './components/ResidentList';
 import Dashboard from './components/Dashboard';
 import Complaints from './components/Complaints';
 import Notices from './components/Notices';
-import Chatbot from './components/Chatbot';
 import FoodMenu from './components/FoodMenu';
 import Profile from './components/Profile';
 
@@ -53,7 +52,7 @@ const initialMenu: WeeklyMenu = {
 const App: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [showLogin, setShowLogin] = useState(false);
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'complaints' | 'notices' | 'chat' | 'residents' | 'food' | 'profile'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'complaints' | 'notices' | 'residents' | 'food' | 'profile'>('dashboard');
 
   const [complaints, setComplaints] = useState<Complaint[]>([]);
   const [notices, setNotices] = useState<Notice[]>([]);
@@ -239,8 +238,6 @@ const App: React.FC = () => {
           }}
         />
       )}
-      
-      {activeTab === 'chat' && <Chatbot />}
       {activeTab === 'profile' && <Profile user={currentUser} onUpdate={setCurrentUser} />}
     </Layout>
   );
