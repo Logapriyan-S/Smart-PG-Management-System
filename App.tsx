@@ -1,18 +1,60 @@
 import React, { useState, useEffect } from 'react';
-import { User, UserRole, Complaint, Notice, WeeklyMenu } from './types.ts';
-import Auth from './components/Auth.tsx';
-import Dashboard from './components/Dashboard.tsx';
-import Complaints from './components/Complaints.tsx';
-import Notices from './components/Notices.tsx';
-import Chatbot from './components/Chatbot.tsx';
-import Layout from './components/Layout.tsx';
-import ResidentList from './components/ResidentList.tsx';
-import FoodMenu from './components/FoodMenu.tsx';
-import Profile from './components/Profile.tsx';
+import { User, UserRole, Complaint, Notice, WeeklyMenu, ComplaintStatus } from './types';
+import Landing from './pages/Landing';
+import Auth from './components/Auth';
+import Layout from './components/Layout';
+import ResidentList from './components/ResidentList';
+import Dashboard from './components/Dashboard';
+import Complaints from './components/Complaints';
+import Notices from './components/Notices';
+import Chatbot from './components/Chatbot';
+import FoodMenu from './components/FoodMenu';
+import Profile from './components/Profile';
+
+// Premium initial menu used for self-healing if the database is empty
+const initialMenu: WeeklyMenu = {
+  Monday: { 
+    breakfast: { time: '8:00 AM', menu: 'Idly & Sambar', image: 'https://images.unsplash.com/photo-1589301760014-d929f3979dbc?q=80&w=600&auto=format&fit=crop' }, 
+    lunch: { time: '1:30 PM', menu: 'Rice & Veg Curry', image: 'https://images.unsplash.com/photo-1512058560366-cd2429555614?q=80&w=600&auto=format&fit=crop' }, 
+    dinner: { time: '8:30 PM', menu: 'Roti & Dal', image: 'https://images.unsplash.com/photo-1606491956689-2ea866880c84?q=80&w=600&auto=format&fit=crop' } 
+  },
+  Tuesday: { 
+    breakfast: { time: '8:00 AM', menu: 'Poori Bhaji', image: 'https://images.unsplash.com/photo-1606491956689-2ea866880c84?q=80&w=600&auto=format&fit=crop' }, 
+    lunch: { time: '1:30 PM', menu: 'North Indian Meal', image: 'https://images.unsplash.com/photo-1512058560366-cd2429555614?q=80&w=600&auto=format&fit=crop' }, 
+    dinner: { time: '8:30 PM', menu: 'Fried Rice', image: 'https://images.unsplash.com/photo-1512058560366-cd2429555614?q=80&w=600&auto=format&fit=crop' } 
+  },
+  Wednesday: { 
+    breakfast: { time: '8:00 AM', menu: 'Dosa & Chutney', image: 'https://images.unsplash.com/photo-1589301760014-d929f3979dbc?q=80&w=600&auto=format&fit=crop' }, 
+    lunch: { time: '1:30 PM', menu: 'South Indian Meal', image: 'https://images.unsplash.com/photo-1512058560366-cd2429555614?q=80&w=600&auto=format&fit=crop' }, 
+    dinner: { time: '8:30 PM', menu: 'Paneer Butter Masala', image: 'https://images.unsplash.com/photo-1631452180519-c014fe946bc7?q=80&w=600&auto=format&fit=crop' } 
+  },
+  Thursday: { 
+    breakfast: { time: '8:00 AM', menu: 'Poha', image: 'https://images.unsplash.com/photo-1625232757233-149f193c7847?q=80&w=600&auto=format&fit=crop' }, 
+    lunch: { time: '1:30 PM', menu: 'Veg Biryani', image: 'https://images.unsplash.com/photo-1631452180519-c014fe946bc7?q=80&w=600&auto=format&fit=crop' }, 
+    dinner: { time: '8:30 PM', menu: 'Aloo Paratha', image: 'https://images.unsplash.com/photo-1606491956689-2ea866880c84?q=80&w=600&auto=format&fit=crop' } 
+  },
+  Friday: { 
+    breakfast: { time: '8:00 AM', menu: 'Pongal', image: 'https://images.unsplash.com/photo-1516100882582-76c9a58b3e28?q=80&w=600&auto=format&fit=crop' }, 
+    lunch: { time: '1:30 PM', menu: 'North Indian Thali', image: 'https://images.unsplash.com/photo-1512058560366-cd2429555614?q=80&w=600&auto=format&fit=crop' }, 
+    dinner: { time: '8:30 PM', menu: 'Poori Sabji', image: 'https://images.unsplash.com/photo-1606491956689-2ea866880c84?q=80&w=600&auto=format&fit=crop' } 
+  },
+  Saturday: { 
+    breakfast: { time: '8:00 AM', menu: 'Bread Omelette', image: 'https://images.unsplash.com/photo-1525351484163-7529414344d8?q=80&w=600&auto=format&fit=crop' }, 
+    lunch: { time: '1:30 PM', menu: 'Lemon Rice', image: 'https://images.unsplash.com/photo-1512058560366-cd2429555614?q=80&w=600&auto=format&fit=crop' }, 
+    dinner: { time: '8:30 PM', menu: 'Dosa & Chutney', image: 'https://images.unsplash.com/photo-1589301760014-d929f3979dbc?q=80&w=600&auto=format&fit=crop' } 
+  },
+  Sunday: { 
+    breakfast: { time: '8:00 AM', menu: 'Special Breakfast', image: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?q=80&w=600&auto=format&fit=crop' }, 
+    lunch: { time: '1:30 PM', menu: 'Veg Biryani', image: 'https://images.unsplash.com/photo-1631452180519-c014fe946bc7?q=80&w=600&auto=format&fit=crop' }, 
+    dinner: { time: '8:30 PM', menu: 'Chinese Special', image: 'https://images.unsplash.com/photo-1512058560366-cd2429555614?q=80&w=600&auto=format&fit=crop' } 
+  }
+};
 
 const App: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [showLogin, setShowLogin] = useState(false);
   const [activeTab, setActiveTab] = useState<'dashboard' | 'complaints' | 'notices' | 'chat' | 'residents' | 'food' | 'profile'>('dashboard');
+
   const [complaints, setComplaints] = useState<Complaint[]>([]);
   const [notices, setNotices] = useState<Notice[]>([]);
   const [residents, setResidents] = useState<User[]>([]);
@@ -21,26 +63,37 @@ const App: React.FC = () => {
 
   const TOTAL_ROOMS = 50;
 
-  // Load initial data
   useEffect(() => {
+    const storedUser = localStorage.getItem('pg_user');
+    if (storedUser) setCurrentUser(JSON.parse(storedUser));
+    
     const fetchData = async () => {
       try {
-        const storedUser = localStorage.getItem('pg_user');
-        if (storedUser) setCurrentUser(JSON.parse(storedUser));
-
         const [complaintsRes, noticesRes, residentsRes, menuRes] = await Promise.all([
-          fetch('/api/complaints'),
-          fetch('/api/notices'),
-          fetch('/api/residents'),
-          fetch('/api/menu')
+          fetch('/api/complaints').then(res => res.ok ? res.json() : []),
+          fetch('/api/notices').then(res => res.ok ? res.json() : []),
+          fetch('/api/residents').then(res => res.ok ? res.json() : []),
+          fetch('/api/menu').then(res => res.ok ? res.json() : {})
         ]);
 
-        setComplaints(await complaintsRes.json());
-        setNotices(await noticesRes.json());
-        setResidents(await residentsRes.json());
-        setFoodMenu(await menuRes.json());
+        setComplaints(complaintsRes);
+        setNotices(noticesRes);
+        setResidents(residentsRes);
+        
+        // SELF-HEALING LOGIC: If database menu is empty, use initialMenu and save to backend
+        if (!menuRes || !menuRes.Monday) {
+          setFoodMenu(initialMenu);
+          await fetch('/api/menu', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(initialMenu)
+          });
+        } else {
+          setFoodMenu(menuRes);
+        }
+        
       } catch (err) {
-        console.error("Failed to fetch data from Flask:", err);
+        console.error("Fetch error:", err);
       } finally {
         setLoading(false);
       }
@@ -50,189 +103,145 @@ const App: React.FC = () => {
 
   const handleLogin = (user: User) => {
     setCurrentUser(user);
+    setShowLogin(false);
     localStorage.setItem('pg_user', JSON.stringify(user));
   };
 
   const handleLogout = () => {
     setCurrentUser(null);
+    setShowLogin(false);
     localStorage.removeItem('pg_user');
     setActiveTab('dashboard');
   };
 
-  const updateProfile = async (updatedUser: User) => {
-    try {
-      const res = await fetch(`/api/user/${updatedUser.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updatedUser)
-      });
-      const data = await res.json();
-      setCurrentUser(data);
-      localStorage.setItem('pg_user', JSON.stringify(data));
-      setResidents(prev => prev.map(r => (r.id === data.id ? data : r)));
-    } catch (err) {
-      alert("Update failed!");
+  const handleAddResident = async (formData: any) => {
+    const res = await fetch('/api/residents', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(formData)
+    });
+    if (res.ok) {
+      const newRes = await res.json();
+      setResidents(prev => [...prev, newRes]);
     }
   };
-
-  const updateFoodMenu = async (newMenu: WeeklyMenu) => {
-    try {
-      const res = await fetch('/api/menu', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newMenu)
-      });
-      setFoodMenu(await res.json());
-    } catch (err) {
-      alert("Failed to update menu.");
-    }
-  };
-
-  const addComplaint = async (complaint: Complaint) => {
-    try {
-      const res = await fetch('/api/complaints', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(complaint)
-      });
-      setComplaints(await res.json());
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  const addNotice = async (notice: Notice) => {
-    try {
-      const res = await fetch('/api/notices', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(notice)
-      });
-      setNotices(await res.json());
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  // ---------------- Resident Handlers ----------------
-  const handleAddResident = async (resident: User) => {
-    try {
-      const res = await fetch('/api/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(resident)
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        alert(data.error || 'Failed to add resident');
-        return;
-      }
-      setResidents(prev => [data, ...prev]);
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  const handleUpdateRent = async (id: string, isPaid: boolean) => {
-    try {
-      const resident = residents.find(r => r.id === id);
-      if (!resident) return;
-      const res = await fetch(`/api/user/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ isRentPaid: isPaid })
-      });
-      const data = await res.json();
-      setResidents(prev => prev.map(r => (r.id === id ? data : r)));
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  const handleDeleteResident = async (id: string) => {
-    if (!window.confirm('Are you sure you want to delete this resident?')) return;
-    try {
-      // Remove resident in backend
-      const updatedResidents = residents.filter(r => r.id !== id);
-      await fetch('/api/residents', {  // Make sure your Flask API supports PUT for updating full residents list
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updatedResidents)
-      });
-      setResidents(updatedResidents);
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  // -----------------------------------------------------
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
-        <div className="text-center">
-          <div className="w-16 h-16 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-slate-600 font-bold">Waking up Smart PG Server...</p>
-        </div>
+      <div className="min-h-screen flex items-center justify-center bg-[#030614]">
+        <div className="w-12 h-12 border-4 border-[#D4AF37] border-t-transparent rounded-full animate-spin"></div>
       </div>
     );
   }
 
-  if (!currentUser) return <Auth onLogin={handleLogin} />;
+  if (!currentUser && !showLogin) return <Landing onLoginClick={() => setShowLogin(true)} />;
+  if (!currentUser && showLogin) return <Auth onLogin={handleLogin} onBack={() => setShowLogin(false)} />;
 
   return (
-    <Layout
-      user={currentUser}
-      activeTab={activeTab}
-      onTabChange={setActiveTab}
-      onLogout={handleLogout}
-    >
+    <Layout user={currentUser} activeTab={activeTab} onTabChange={setActiveTab} onLogout={handleLogout}>
       {activeTab === 'dashboard' && (
-        <Dashboard
-          user={currentUser}
-          complaints={complaints}
-          notices={notices}
-          residents={residents}
+        <Dashboard 
+          user={currentUser} 
+          complaints={complaints} 
+          notices={notices} 
+          residents={residents} 
+          totalRooms={TOTAL_ROOMS} 
+          onNavigate={setActiveTab} 
+        />
+      )}
+      
+      {activeTab === 'residents' && (
+        <ResidentList 
+          residents={residents} 
           totalRooms={TOTAL_ROOMS}
-          onNavigate={setActiveTab}
+          currentUser={currentUser!} 
+          onAddResident={handleAddResident} 
+          onUpdateRent={async (id, isPaid) => {
+            const r = await fetch(`/api/user/${id}`, { 
+              method: 'PUT', 
+              headers: {'Content-Type': 'application/json'}, 
+              body: JSON.stringify({isRentPaid: isPaid}) 
+            });
+            if (r.ok) setResidents(prev => prev.map(res => res.id === id ? {...res, isRentPaid: isPaid} : res));
+          }}
+          onDeleteResident={async (id) => {
+            if (window.confirm("Delete resident from ledger?")) {
+              await fetch(`/api/user/${id}`, { method: 'DELETE' });
+              setResidents(prev => prev.filter(res => res.id !== id));
+            }
+          }}
         />
       )}
-      {activeTab === 'complaints' && (
-        <Complaints
-          user={currentUser}
-          complaints={complaints}
-          onAdd={addComplaint}
-          onUpdateStatus={() => {}}
-        />
-      )}
-      {activeTab === 'notices' && (
-        <Notices
-          user={currentUser}
-          notices={notices}
-          onAdd={addNotice}
-        />
-      )}
-      {activeTab === 'chat' && <Chatbot />}
+      
       {activeTab === 'food' && foodMenu && (
-        <FoodMenu
-          user={currentUser}
-          menu={foodMenu}
-          onUpdate={updateFoodMenu}
+        <FoodMenu 
+          user={currentUser} 
+          menu={foodMenu} 
+          onUpdate={async (newMenu) => {
+            const res = await fetch('/api/menu', { 
+              method: 'POST', 
+              headers: {'Content-Type': 'application/json'}, 
+              body: JSON.stringify(newMenu) 
+            });
+            if (res.ok) setFoodMenu(newMenu);
+          }} 
         />
       )}
-      {activeTab === 'residents' && currentUser.role === UserRole.ADMIN && (
-        <ResidentList
-          residents={residents}
-          totalRooms={TOTAL_ROOMS}
-          currentUser={currentUser}
-          onUpdateRent={handleUpdateRent}
-          onAddResident={handleAddResident}
-          onDeleteResident={handleDeleteResident}
+      
+      {activeTab === 'complaints' && (
+        <Complaints 
+          user={currentUser} 
+          complaints={complaints} 
+          onAdd={async (c) => {
+            const res = await fetch('/api/complaints', { 
+              method: 'POST', 
+              headers: {'Content-Type': 'application/json'}, 
+              body: JSON.stringify(c) 
+            });
+            if (res.ok) {
+              const savedComplaint = await res.json();
+              setComplaints([savedComplaint, ...complaints]);
+            }
+          }} 
+          onUpdateStatus={async (id, newStatus) => {
+            const res = await fetch(`/api/complaints/${id}`, { 
+              method: 'PUT', 
+              headers: {'Content-Type': 'application/json'}, 
+              body: JSON.stringify({status: newStatus}) 
+            });
+            if (res.ok) {
+              setComplaints(prev => prev.map(c => c.id === id ? { ...c, status: newStatus as ComplaintStatus } : c));
+            }
+          }} 
         />
       )}
-      {activeTab === 'profile' && (
-        <Profile user={currentUser} onUpdate={updateProfile} />
+      
+      {activeTab === 'notices' && (
+        <Notices 
+          user={currentUser!} 
+          notices={notices} 
+          onAdd={async (n) => {
+            const res = await fetch('/api/notices', { 
+              method: 'POST', 
+              headers: {'Content-Type': 'application/json'}, 
+              body: JSON.stringify(n) 
+            });
+            if (res.ok) {
+              const savedNotice = await res.json();
+              setNotices([savedNotice, ...notices]);
+            }
+          }} 
+          onDelete={async (id) => {
+            if (window.confirm("Delete this notice permanently?")) {
+              await fetch(`/api/notices/${id}`, { method: 'DELETE' });
+              setNotices(prev => prev.filter(n => n.id !== id));
+            }
+          }}
+        />
       )}
+      
+      {activeTab === 'chat' && <Chatbot />}
+      {activeTab === 'profile' && <Profile user={currentUser} onUpdate={setCurrentUser} />}
     </Layout>
   );
 };

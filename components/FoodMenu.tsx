@@ -1,65 +1,82 @@
-
-import React, { useState } from 'react';
-import { User, UserRole, WeeklyMenu, DayMenu } from '../types';
+import React, { useState, useEffect } from 'react';
+import { User, UserRole, WeeklyMenu } from '../types';
 
 interface FoodMenuProps {
   user: User;
   menu: WeeklyMenu;
-  onUpdate: (menu: WeeklyMenu) => void;
+  onUpdate: (newMenu: WeeklyMenu) => void;
 }
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+const MEALS = ['breakfast', 'lunch', 'dinner'] as const;
 
 const FoodMenu: React.FC<FoodMenuProps> = ({ user, menu, onUpdate }) => {
   const isAdmin = user.role === UserRole.ADMIN;
-  const [selectedDay, setSelectedDay] = useState<string>(DAYS[new Date().getDay() === 0 ? 6 : new Date().getDay() - 1]);
-  const [isEditing, setIsEditing] = useState(false);
-  const [editMenu, setEditMenu] = useState<WeeklyMenu>(menu);
+  const [activeDay, setActiveDay] = useState(DAYS[new Date().getDay() === 0 ? 6 : new Date().getDay() - 1]);
+  
+  // Local state to hold the Admin's edits before saving
+  const [editableMenu, setEditableMenu] = useState<WeeklyMenu>(menu);
+  const [isSaving, setIsSaving] = useState(false);
 
-  const handleUpdate = () => {
-    onUpdate(editMenu);
-    setIsEditing(false);
+  // Keep local state in sync if the database updates
+  useEffect(() => {
+    setEditableMenu(menu);
+  }, [menu]);
+
+  const handleEdit = (day: string, meal: string, field: 'menu' | 'time' | 'image', value: string) => {
+    setEditableMenu(prev => ({
+      ...prev,
+      [day]: {
+        ...prev[day as keyof WeeklyMenu],
+        [meal]: {
+          ...prev[day as keyof WeeklyMenu][meal as 'breakfast' | 'lunch' | 'dinner'],
+          [field]: value
+        }
+      }
+    }));
   };
 
-  const currentDayMenu = isEditing ? editMenu[selectedDay] : menu[selectedDay];
+  const handleSave = async () => {
+    setIsSaving(true);
+    await onUpdate(editableMenu); // Sends the updated menu to App.tsx -> Backend
+    setIsSaving(false);
+    alert('Menu successfully updated for all residents.');
+  };
+
+  const currentDayMenu = isAdmin ? editableMenu[activeDay as keyof WeeklyMenu] : menu[activeDay as keyof WeeklyMenu];
 
   return (
-    <div className="space-y-6 animate-fadeIn">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div className="space-y-10 p-6 animate-fadeIn">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div>
-          <h2 className="text-2xl font-bold text-slate-900">Weekly Food Menu</h2>
-          <p className="text-slate-500">Delicious meals scheduled for the community.</p>
+          <p className="text-[#D4AF37] text-[10px] font-bold tracking-[0.3em] uppercase mb-2">Culinary Experience</p>
+          <h2 className="text-4xl font-extrabold text-white tracking-tight">Weekly Menu</h2>
+          <p className="text-slate-500 font-light mt-2">
+            {isAdmin ? 'Manage the culinary schedule for all residents.' : 'Discover this week’s gourmet selections.'}
+          </p>
         </div>
         {isAdmin && (
           <button 
-            onClick={() => {
-              if (isEditing) handleUpdate();
-              else {
-                setEditMenu(menu);
-                setIsEditing(true);
-              }
-            }}
-            className={`px-6 py-2.5 rounded-xl font-bold shadow-lg transition-all ${
-              isEditing 
-              ? 'bg-emerald-600 text-white shadow-emerald-100' 
-              : 'bg-indigo-600 text-white shadow-indigo-100 hover:bg-indigo-700'
-            }`}
+            onClick={handleSave}
+            disabled={isSaving}
+            className="bg-gradient-to-r from-[#D4AF37] to-[#AA771C] text-[#030614] px-8 py-3.5 rounded-2xl font-bold tracking-widest uppercase text-[10px] shadow-lg shadow-amber-500/20 active:scale-95 transition-all disabled:opacity-50"
           >
-            {isEditing ? 'Save All Changes' : 'Manage Menu'}
+            {isSaving ? 'Synchronizing...' : 'Publish Menu to Residents'}
           </button>
         )}
       </div>
 
       {/* Day Selector */}
-      <div className="flex space-x-2 overflow-x-auto pb-2 scrollbar-hide">
-        {DAYS.map((day) => (
+      <div className="flex overflow-x-auto gap-4 pb-4 custom-scrollbar">
+        {DAYS.map(day => (
           <button
             key={day}
-            onClick={() => setSelectedDay(day)}
-            className={`px-5 py-2 rounded-full text-sm font-bold transition-all whitespace-nowrap ${
-              selectedDay === day 
-              ? 'bg-slate-900 text-white' 
-              : 'bg-white text-slate-500 hover:bg-slate-100 border border-slate-100'
+            onClick={() => setActiveDay(day)}
+            className={`px-6 py-3 rounded-xl font-bold uppercase tracking-widest text-[10px] whitespace-nowrap transition-all ${
+              activeDay === day 
+              ? 'bg-[#D4AF37] text-[#030614] shadow-[0_0_15px_rgba(212,175,55,0.3)]' 
+              : 'bg-white/5 text-slate-400 hover:bg-white/10 hover:text-white border border-white/5'
             }`}
           >
             {day}
@@ -67,133 +84,77 @@ const FoodMenu: React.FC<FoodMenuProps> = ({ user, menu, onUpdate }) => {
         ))}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Breakfast */}
-        <div className="bg-white p-8 rounded-[2rem] border border-slate-100 shadow-sm relative overflow-hidden group">
-          <div className="absolute top-0 right-0 p-6 opacity-10">
-            <svg className="w-16 h-16" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/><path d="M12.5 7H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg>
-          </div>
-          <div className="mb-6">
-            <span className="text-[10px] font-bold text-amber-600 uppercase tracking-widest bg-amber-50 px-3 py-1 rounded-full">Breakfast</span>
-            {isEditing ? (
-              <input 
-                className="mt-4 w-full bg-slate-50 border border-slate-200 rounded-xl p-2 text-sm text-slate-500 font-bold"
-                value={editMenu[selectedDay].breakfast.time}
-                onChange={e => setEditMenu({
-                  ...editMenu,
-                  [selectedDay]: {
-                    ...editMenu[selectedDay],
-                    breakfast: { ...editMenu[selectedDay].breakfast, time: e.target.value }
-                  }
-                })}
-              />
-            ) : (
-              <h4 className="text-sm font-bold text-slate-400 mt-4">{currentDayMenu.breakfast.time}</h4>
-            )}
-          </div>
-          {isEditing ? (
-            <textarea 
-              className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-4 text-slate-800 h-24 text-sm resize-none"
-              value={editMenu[selectedDay].breakfast.menu}
-              onChange={e => setEditMenu({
-                ...editMenu,
-                [selectedDay]: {
-                  ...editMenu[selectedDay],
-                  breakfast: { ...editMenu[selectedDay].breakfast, menu: e.target.value }
-                }
-              })}
-            />
-          ) : (
-            <p className="text-lg font-bold text-slate-900 leading-relaxed">{currentDayMenu.breakfast.menu}</p>
-          )}
-        </div>
+      {/* Meals Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        {MEALS.map((mealType) => {
+          const mealData = currentDayMenu[mealType];
+          
+          return (
+            <div key={mealType} className="bg-[#050917] rounded-[2.5rem] border border-white/5 overflow-hidden group hover:border-[#D4AF37]/30 transition-all shadow-2xl">
+              {/* Image Section */}
+              <div className="h-48 relative overflow-hidden bg-[#0A0F1D]">
+                <img 
+                  src={mealData.image || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?q=80&w=600&auto=format&fit=crop'} 
+                  alt={mealData.menu}
+                  className="w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-110 transition-all duration-700"
+                  onError={(e) => { e.currentTarget.src = 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?q=80&w=600&auto=format&fit=crop'; }}
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#050917] to-transparent" />
+                <div className="absolute bottom-4 left-6">
+                  <p className="text-[#D4AF37] font-bold tracking-[0.2em] uppercase text-[10px] mb-1">{mealType}</p>
+                </div>
+              </div>
 
-        {/* Lunch */}
-        <div className="bg-white p-8 rounded-[2rem] border border-slate-100 shadow-sm relative overflow-hidden group">
-          <div className="absolute top-0 right-0 p-6 opacity-10 text-indigo-600">
-            <svg className="w-16 h-16" fill="currentColor" viewBox="0 0 24 24"><path d="M11 9H9V2H7v7H5V2H3v7c0 2.12 1.66 3.84 3.75 3.97V22h2.5v-9.03C11.34 12.84 13 11.12 13 9V2h-2v7zm5-3v8h2.5v8H21V2c-2.76 0-5 2.24-5 4z"/></svg>
-          </div>
-          <div className="mb-6">
-            <span className="text-[10px] font-bold text-indigo-600 uppercase tracking-widest bg-indigo-50 px-3 py-1 rounded-full">Lunch</span>
-            {isEditing ? (
-              <input 
-                className="mt-4 w-full bg-slate-50 border border-slate-200 rounded-xl p-2 text-sm text-slate-500 font-bold"
-                value={editMenu[selectedDay].lunch.time}
-                onChange={e => setEditMenu({
-                  ...editMenu,
-                  [selectedDay]: {
-                    ...editMenu[selectedDay],
-                    lunch: { ...editMenu[selectedDay].lunch, time: e.target.value }
-                  }
-                })}
-              />
-            ) : (
-              <h4 className="text-sm font-bold text-slate-400 mt-4">{currentDayMenu.lunch.time}</h4>
-            )}
-          </div>
-          {isEditing ? (
-            <textarea 
-              className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-4 text-slate-800 h-24 text-sm resize-none"
-              value={editMenu[selectedDay].lunch.menu}
-              onChange={e => setEditMenu({
-                ...editMenu,
-                [selectedDay]: {
-                  ...editMenu[selectedDay],
-                  lunch: { ...editMenu[selectedDay].lunch, menu: e.target.value }
-                }
-              })}
-            />
-          ) : (
-            <p className="text-lg font-bold text-slate-900 leading-relaxed">{currentDayMenu.lunch.menu}</p>
-          )}
-        </div>
-
-        {/* Dinner */}
-        <div className="bg-white p-8 rounded-[2rem] border border-slate-100 shadow-sm relative overflow-hidden group">
-          <div className="absolute top-0 right-0 p-6 opacity-10 text-rose-600">
-            <svg className="w-16 h-16" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-5-9h10v2H7z"/></svg>
-          </div>
-          <div className="mb-6">
-            <span className="text-[10px] font-bold text-rose-600 uppercase tracking-widest bg-rose-50 px-3 py-1 rounded-full">Dinner</span>
-            {isEditing ? (
-              <input 
-                className="mt-4 w-full bg-slate-50 border border-slate-200 rounded-xl p-2 text-sm text-slate-500 font-bold"
-                value={editMenu[selectedDay].dinner.time}
-                onChange={e => setEditMenu({
-                  ...editMenu,
-                  [selectedDay]: {
-                    ...editMenu[selectedDay],
-                    dinner: { ...editMenu[selectedDay].dinner, time: e.target.value }
-                  }
-                })}
-              />
-            ) : (
-              <h4 className="text-sm font-bold text-slate-400 mt-4">{currentDayMenu.dinner.time}</h4>
-            )}
-          </div>
-          {isEditing ? (
-            <textarea 
-              className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-4 text-slate-800 h-24 text-sm resize-none"
-              value={editMenu[selectedDay].dinner.menu}
-              onChange={e => setEditMenu({
-                ...editMenu,
-                [selectedDay]: {
-                  ...editMenu[selectedDay],
-                  dinner: { ...editMenu[selectedDay].dinner, menu: e.target.value }
-                }
-              })}
-            />
-          ) : (
-            <p className="text-lg font-bold text-slate-900 leading-relaxed">{currentDayMenu.dinner.menu}</p>
-          )}
-        </div>
-      </div>
-
-      <div className="bg-amber-50 p-6 rounded-3xl border border-amber-100">
-        <div className="flex items-center space-x-3 text-amber-800">
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-          <span className="text-sm font-bold italic">Mess Rules: Please inform the mess manager 4 hours in advance if you will skip a meal to avoid food waste.</span>
-        </div>
+              {/* Data Section */}
+              <div className="p-6 space-y-4">
+                {isAdmin ? (
+                  // ADMIN VIEW: Editable Inputs
+                  <div className="space-y-4">
+                     <div>
+                      <label className="text-[9px] text-slate-500 uppercase tracking-widest ml-1">Menu Item</label>
+                      <input 
+                        type="text"
+                        value={mealData.menu}
+                        onChange={(e) => handleEdit(activeDay, mealType, 'menu', e.target.value)}
+                        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-white text-sm outline-none focus:border-[#D4AF37]/50 mt-1"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[9px] text-slate-500 uppercase tracking-widest ml-1">Timing</label>
+                      <input 
+                        type="text"
+                        value={mealData.time}
+                        onChange={(e) => handleEdit(activeDay, mealType, 'time', e.target.value)}
+                        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-slate-300 text-xs outline-none focus:border-[#D4AF37]/50 mt-1"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[9px] text-slate-500 uppercase tracking-widest ml-1">Image URL</label>
+                      <input 
+                        type="text"
+                        value={mealData.image}
+                        onChange={(e) => handleEdit(activeDay, mealType, 'image', e.target.value)}
+                        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-slate-400 text-xs outline-none focus:border-[#D4AF37]/50 mt-1"
+                        placeholder="Paste image link here"
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  // RESIDENT VIEW: Read-Only Display
+                  <div>
+                    <h3 className="text-xl font-bold text-white mb-2">{mealData.menu}</h3>
+                    <div className="flex items-center text-slate-400 text-xs space-x-2">
+                      <svg className="w-4 h-4 text-[#D4AF37]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <span>{mealData.time}</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );

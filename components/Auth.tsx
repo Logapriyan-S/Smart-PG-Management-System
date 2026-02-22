@@ -1,31 +1,18 @@
 import React, { useState } from 'react';
-import { User, UserRole } from '../types';
-import loginBg from '../assets/pg1.jpg';
+import { UserRole } from '../types';
 
 interface AuthProps {
-  onLogin: (user: User) => void;
+  onLogin: (user: any) => void;
+  onBack: () => void;
 }
 
-const Auth: React.FC<AuthProps> = ({ onLogin }) => {
-  const [activeRole, setActiveRole] = useState<UserRole>(UserRole.RESIDENT);
+const Auth: React.FC<AuthProps> = ({ onLogin, onBack }) => {
   const [isLogin, setIsLogin] = useState(true);
-
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    password: '',
-    confirmPassword: '',
-    roomNumber: '',
-    phoneNumber: ''
-  });
-
+  const [role, setRole] = useState<UserRole>(UserRole.RESIDENT);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-
-  const handleRoleChange = (role: UserRole) => {
-    setActiveRole(role);
-    if (role === UserRole.ADMIN) setIsLogin(true);
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,203 +20,134 @@ const Auth: React.FC<AuthProps> = ({ onLogin }) => {
     setIsLoading(true);
 
     try {
-      if (isLogin) {
-        const res = await fetch('/api/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            email: formData.email,
-            password: formData.password,
-            role: activeRole
-          })
-        });
+      // Sending credentials to your Flask backend
+      const response = await fetch('/api/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password, role }),
+      });
 
-        const data = await res.json();
-        if (!res.ok) {
-          setError(data.error || 'Login failed');
-          return;
-        }
+      const data = await response.json();
 
+      if (response.ok) {
+        // Successful login! Pass the user data to App.tsx
         onLogin(data);
       } else {
-        if (formData.password !== formData.confirmPassword) {
-          setError('Passwords do not match');
-          return;
-        }
-
-        const res = await fetch('/api/register', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(formData)
-        });
-
-        const data = await res.json();
-        if (!res.ok) {
-          setError(data.error || 'Registration failed');
-          return;
-        }
-
-        alert('Registration successful. Please login.');
-        setIsLogin(true);
+        // Show the error from the backend (e.g., "Invalid credentials")
+        setError(data.error || 'Authentication failed. Please check your credentials.');
       }
-    } catch {
-      setError('Server not reachable');
+    } catch (err) {
+      setError('Cannot connect to the server. Ensure the backend is running.');
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex">
+    <div className="min-h-screen bg-[#030614] flex items-center justify-center p-4 relative overflow-hidden">
+      {/* Background Ambience */}
+      <div className="absolute top-[-20%] left-[-10%] w-[500px] h-[500px] bg-[#D4AF37]/10 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute bottom-[-20%] right-[-10%] w-[500px] h-[500px] bg-blue-900/10 rounded-full blur-[120px] pointer-events-none" />
+      {/* golden glitter particles */}
+      {[...Array(10)].map((_, i) => (
+        <span
+          key={i}
+          className="absolute bg-[#D4AF37] rounded-full w-1 h-1 opacity-0 animate-ping"
+          style={{
+            top: `${Math.random() * 100}%`,
+            left: `${Math.random() * 100}%`,
+            animationDelay: `${Math.random() * 2}s`,
+          }}
+        />
+      ))}
+      {/* decorative side panels */}
+      <div className="absolute inset-y-0 left-0 w-2 bg-gradient-to-b from-[#D4AF37]/30 via-transparent to-[#D4AF37]/30 pointer-events-none" />
+      <div className="absolute inset-y-0 right-0 w-2 bg-gradient-to-b from-[#D4AF37]/30 via-transparent to-[#D4AF37]/30 pointer-events-none" />
 
-      {/* ================= LEFT IMAGE ================= */}
-      <div
-        className="hidden md:block w-1/2 relative bg-cover bg-center"
-        style={{ backgroundImage: `url(${loginBg})` }}
+      <button 
+        onClick={onBack}
+        className="absolute top-8 left-8 text-slate-400 hover:text-white flex items-center space-x-2 transition-colors z-20"
       >
-        {/* Premium dark gradient overlay */}
-        <div className="absolute inset-0 bg-gradient-to-r from-black/70 to-black/30"></div>
+        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+        </svg>
+        <span className="text-xs font-bold tracking-widest uppercase">Return</span>
+      </button>
 
-        {/* Branding text */}
-        <div className="absolute bottom-16 left-16 text-white max-w-sm">
-          <h2 className="text-4xl font-bold mb-4">Welcome to Smart PG</h2>
-          <p className="text-stone-200 text-lg">
-            Manage residents, payments, complaints and everything —
-            all in one smart platform.
-          </p>
-        </div>
-      </div>
-
-      {/* ================= RIGHT SIDE ================= */}
-      <div className="flex w-full md:w-1/2 items-center justify-center bg-gradient-to-br from-stone-100 to-stone-200 p-8">
-
-        <div className="w-full max-w-md">
-
-          <div className="text-center mb-10">
-            <h1 className="text-3xl font-bold text-stone-800">
-              Smart PG Portal
-            </h1>
-            <p className="text-stone-500 mt-2">
-              Secure access to your dashboard
-            </p>
+      <div className="w-full max-w-md bg-white/[0.02] backdrop-blur-xl border border-white/5 p-10 rounded-[3rem] shadow-2xl relative z-10">
+        <div className="text-center mb-10">
+          <div className="w-16 h-16 bg-gradient-to-br from-[#D4AF37] to-[#AA771C] rounded-2xl mx-auto flex items-center justify-center mb-6 shadow-[0_0_30px_rgba(212,175,55,0.3)]">
+            <svg className="w-8 h-8 text-[#030614]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+            </svg>
           </div>
+          <h2 className="text-3xl font-extrabold text-white tracking-tight mb-2">Secure Portal</h2>
+          <p className="text-slate-500 text-sm">Enter your credentials to access your suite.</p>
+        </div>
 
-          <form
-            onSubmit={handleSubmit}
-            className="
-              backdrop-blur-xl
-              bg-white/70
-              p-8
-              rounded-3xl
-              shadow-2xl
-              border border-white/40
-              space-y-5
-            "
+        {/* Role Selection Toggle */}
+        <div className="flex bg-[#0A0F1D] p-1 rounded-xl mb-8 border border-white/5">
+          <button
+            type="button"
+            className={`flex-1 py-3 text-xs font-bold uppercase tracking-widest rounded-lg transition-all ${
+              role === UserRole.RESIDENT ? 'bg-[#D4AF37] text-[#030614] shadow-lg' : 'text-slate-500 hover:text-white'
+            }`}
+            onClick={() => setRole(UserRole.RESIDENT)}
           >
+            Resident
+          </button>
+          <button
+            type="button"
+            className={`flex-1 py-3 text-xs font-bold uppercase tracking-widest rounded-lg transition-all ${
+              role === UserRole.ADMIN ? 'bg-[#D4AF37] text-[#030614] shadow-lg' : 'text-slate-500 hover:text-white'
+            }`}
+            onClick={() => setRole(UserRole.ADMIN)}
+          >
+            Management
+          </button>
+        </div>
 
-            {/* Role Selector */}
-            <div className="flex rounded-full bg-stone-200 p-1">
-              <button
-                type="button"
-                onClick={() => handleRoleChange(UserRole.RESIDENT)}
-                className={`flex-1 py-2 rounded-full text-sm font-semibold transition ${
-                  activeRole === UserRole.RESIDENT
-                    ? 'bg-amber-700 text-white shadow-md'
-                    : 'text-stone-600'
-                }`}
-              >
-                Resident
-              </button>
+        {error && (
+          <div className="mb-6 p-4 bg-rose-500/10 border border-rose-500/20 rounded-xl text-rose-500 text-xs text-center font-medium">
+            {error}
+          </div>
+        )}
 
-              <button
-                type="button"
-                onClick={() => handleRoleChange(UserRole.ADMIN)}
-                className={`flex-1 py-2 rounded-full text-sm font-semibold transition ${
-                  activeRole === UserRole.ADMIN
-                    ? 'bg-amber-700 text-white shadow-md'
-                    : 'text-stone-600'
-                }`}
-              >
-                Owner / Admin
-              </button>
-            </div>
-
-            {/* Email */}
+        <form onSubmit={handleSubmit} className="space-y-5">
+          <div>
+            <label className="block text-[10px] font-bold text-[#D4AF37] uppercase tracking-widest mb-2 ml-1">Email Identity</label>
             <input
               type="email"
-              placeholder="Email address"
-              className="w-full p-3 rounded-xl bg-white border border-stone-300 focus:ring-2 focus:ring-amber-600 outline-none transition"
-              value={formData.email}
-              onChange={e =>
-                setFormData({ ...formData, email: e.target.value })
-              }
               required
+              className="w-full bg-[#0A0F1D] border border-white/10 rounded-2xl px-5 py-4 text-white text-sm outline-none focus:border-[#D4AF37]/50 transition-colors"
+              placeholder="Enter your registered email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
             />
+          </div>
 
-            {/* Password */}
+          <div>
+            <label className="block text-[10px] font-bold text-[#D4AF37] uppercase tracking-widest mb-2 ml-1">Security Key</label>
             <input
               type="password"
-              placeholder="Password"
-              className="w-full p-3 rounded-xl bg-white border border-stone-300 focus:ring-2 focus:ring-amber-600 outline-none transition"
-              value={formData.password}
-              onChange={e =>
-                setFormData({ ...formData, password: e.target.value })
-              }
               required
+              className="w-full bg-[#0A0F1D] border border-white/10 rounded-2xl px-5 py-4 text-white text-sm outline-none focus:border-[#D4AF37]/50 transition-colors"
+              placeholder="Enter your password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
             />
+          </div>
 
-            {error && (
-              <p className="text-red-600 text-sm font-medium">{error}</p>
-            )}
-
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="
-                w-full
-                bg-amber-700
-                hover:bg-amber-800
-                text-white
-                py-3
-                rounded-xl
-                font-semibold
-                shadow-lg
-                transition
-              "
-            >
-              {isLoading ? 'Please wait...' : isLogin ? 'Login' : 'Register'}
-            </button>
-
-            {activeRole === UserRole.RESIDENT && (
-              <p className="text-center text-sm text-stone-600">
-                {isLogin ? (
-                  <>
-                    Don't have an account?{' '}
-                    <button
-                      type="button"
-                      onClick={() => setIsLogin(false)}
-                      className="text-amber-700 font-semibold"
-                    >
-                      Register
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    Already have an account?{' '}
-                    <button
-                      type="button"
-                      onClick={() => setIsLogin(true)}
-                      className="text-amber-700 font-semibold"
-                    >
-                      Login
-                    </button>
-                  </>
-                )}
-              </p>
-            )}
-
-          </form>
-        </div>
+          <button
+            type="submit"
+            disabled={isLoading}
+            className="w-full bg-gradient-to-r from-[#D4AF37] via-[#F3E5AB] to-[#AA771C] text-[#030614] py-5 rounded-2xl font-black uppercase text-xs tracking-[0.2em] shadow-[0_0_20px_rgba(212,175,55,0.2)] hover:shadow-[0_0_30px_rgba(212,175,55,0.4)] active:scale-95 transition-all mt-4 disabled:opacity-70"
+          >
+            {isLoading ? 'Authenticating...' : 'Authorize Access'}
+          </button>
+        </form>
       </div>
     </div>
   );

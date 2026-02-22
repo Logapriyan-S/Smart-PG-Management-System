@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { User, UserRole, Notice } from '../types';
 
@@ -6,126 +5,119 @@ interface NoticesProps {
   user: User;
   notices: Notice[];
   onAdd: (notice: Notice) => void;
+  onDelete: (id: string) => void;
 }
 
-const Notices: React.FC<NoticesProps> = ({ user, notices, onAdd }) => {
-  const isAdmin = user.role === UserRole.ADMIN;
+const Notices: React.FC<NoticesProps> = ({ user, notices, onAdd, onDelete }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [formData, setFormData] = useState({ title: '', content: '' });
+  const isAdmin = user.role === UserRole.ADMIN;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.title || !formData.content) return;
-
-    const newNotice: Notice = {
-      id: Math.random().toString(36).substr(2, 9),
+    const newNotice = {
+      id: 'not-' + Math.random().toString(36).substr(2, 9),
       title: formData.title,
       content: formData.content,
       author: user.name,
       createdAt: new Date().toISOString()
     };
-
-    onAdd(newNotice);
+    onAdd(newNotice as Notice);
     setIsModalOpen(false);
     setFormData({ title: '', content: '' });
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-10 p-6 animate-fadeIn">
+      {/* Header */}
+      <div className="flex justify-between items-end">
         <div>
-          <h2 className="text-2xl font-bold text-slate-900">Notice Board</h2>
-          <p className="text-slate-500">Official announcements and updates.</p>
+          <h2 className="text-4xl font-bold text-white tracking-tight">Notice Board</h2>
+          <p className="text-slate-500 mt-2">Official announcements and updates.</p>
         </div>
         {isAdmin && (
           <button 
-            onClick={() => setIsModalOpen(true)}
-            className="bg-indigo-600 text-white px-5 py-2.5 rounded-xl font-semibold shadow-lg shadow-indigo-100 hover:bg-indigo-700 transition-all active:scale-95 flex items-center space-x-2"
+            onClick={() => setIsModalOpen(true)} 
+            className="bg-[#D4AF37] hover:bg-[#E5C07B] text-black px-8 py-3 rounded-2xl font-bold uppercase text-[10px] transition-colors"
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
-            <span>Post Notice</span>
+            Draft Announcement
           </button>
         )}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {notices.length > 0 ? (
-          notices.map(notice => (
-            <div key={notice.id} className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm flex flex-col hover:shadow-md transition-all group">
-              <div className="flex items-center justify-between mb-4">
-                <span className="text-[10px] font-bold text-indigo-600 uppercase tracking-widest bg-indigo-50 px-2 py-1 rounded">Update</span>
-                <span className="text-[10px] text-slate-400">{new Date(notice.createdAt).toLocaleDateString()}</span>
-              </div>
-              <h3 className="font-bold text-slate-900 text-lg mb-3 leading-tight">{notice.title}</h3>
-              <p className="text-sm text-slate-600 mb-6 flex-1 whitespace-pre-line line-clamp-6">{notice.content}</p>
-              <div className="pt-4 border-t border-slate-50 flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <div className="w-6 h-6 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 text-[10px] font-bold">
-                    {notice.author.charAt(0)}
-                  </div>
-                  <span className="text-xs font-semibold text-slate-500">{notice.author}</span>
-                </div>
-                <button className="text-indigo-600 group-hover:translate-x-1 transition-transform">
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 8l4 4m0 0l-4 4m4 4H3" /></svg>
+      {/* Notices Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {notices.length === 0 ? (
+          <p className="text-slate-500 italic col-span-2">No active announcements.</p>
+        ) : (
+          notices.map((notice) => (
+            <div key={notice.id} className="bg-white/[0.02] border border-white/5 p-8 rounded-[2.5rem] relative group hover:border-[#D4AF37]/30 transition-all">
+              {isAdmin && (
+                <button 
+                  onClick={() => onDelete(notice.id)}
+                  className="absolute top-6 right-6 text-slate-500 hover:text-rose-500 transition-colors opacity-0 group-hover:opacity-100"
+                  title="Delete Notice"
+                >
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
                 </button>
+              )}
+              <p className="text-[10px] font-bold text-[#D4AF37] uppercase tracking-widest mb-2">
+                {new Date(notice.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+              </p>
+              <h3 className="text-xl font-bold text-white mb-3">{notice.title}</h3>
+              <p className="text-slate-400 text-sm leading-relaxed mb-6">{notice.content}</p>
+              <div className="flex items-center space-x-3">
+                <div className="w-6 h-6 rounded-full bg-white/10 flex items-center justify-center text-[10px] font-bold text-white">
+                  {notice.author.charAt(0)}
+                </div>
+                <p className="text-xs text-slate-500">Posted by <span className="text-slate-300">{notice.author}</span></p>
               </div>
             </div>
           ))
-        ) : (
-          <div className="col-span-full py-20 text-center text-slate-400">No notices posted yet.</div>
         )}
       </div>
 
-      {/* Post Notice Modal */}
+      {/* Admin Create Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
-          <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl animate-scaleIn">
-            <div className="p-8 border-b border-slate-50 flex justify-between items-center">
-              <h3 className="text-xl font-bold text-slate-900">Post New Notice</h3>
-              <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600">
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
+        <div className="fixed inset-0 z-[200] bg-black/90 flex items-center justify-center p-4 backdrop-blur-sm">
+          <form onSubmit={handleSubmit} className="bg-[#050917] border border-[#D4AF37]/30 p-10 rounded-[3rem] w-full max-w-lg space-y-4 shadow-2xl">
+            <h3 className="text-white text-xl font-bold mb-4">Publish Announcement</h3>
+            
+            <input 
+              required 
+              className="w-full bg-[#0A0F1D] border border-white/10 focus:border-[#D4AF37]/50 p-4 rounded-2xl text-white outline-none transition-all" 
+              placeholder="Notice Title" 
+              value={formData.title} 
+              onChange={e => setFormData({...formData, title: e.target.value})} 
+            />
+            
+            <textarea 
+              required 
+              rows={5}
+              className="w-full bg-[#0A0F1D] border border-white/10 focus:border-[#D4AF37]/50 p-4 rounded-2xl text-white outline-none transition-all resize-none" 
+              placeholder="Announcement Details..." 
+              value={formData.content} 
+              onChange={e => setFormData({...formData, content: e.target.value})} 
+            />
+            
+            <div className="flex gap-4 mt-6">
+              <button 
+                type="button" 
+                onClick={() => setIsModalOpen(false)}
+                className="w-1/3 py-5 rounded-2xl font-bold uppercase text-xs text-slate-400 border border-white/10 hover:bg-white/5 hover:text-white transition-all"
+              >
+                Cancel
+              </button>
+              <button 
+                type="submit" 
+                className="w-2/3 bg-gradient-to-r from-[#D4AF37] to-[#AA771C] hover:scale-[1.02] active:scale-95 transition-all py-5 rounded-2xl font-black uppercase text-xs text-[#030614] shadow-xl"
+              >
+                Publish Notice
               </button>
             </div>
-            <form onSubmit={handleSubmit} className="p-8 space-y-5">
-              <div>
-                <label className="block text-sm font-bold text-slate-700 mb-2">Title</label>
-                <input
-                  required
-                  type="text"
-                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
-                  placeholder="e.g. Water Tank Maintenance"
-                  value={formData.title}
-                  onChange={e => setFormData({...formData, title: e.target.value})}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-bold text-slate-700 mb-2">Message Content</label>
-                <textarea
-                  required
-                  rows={6}
-                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all resize-none"
-                  placeholder="Detailed announcement content..."
-                  value={formData.content}
-                  onChange={e => setFormData({...formData, content: e.target.value})}
-                ></textarea>
-              </div>
-              <div className="pt-4 flex gap-4">
-                <button 
-                  type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="flex-1 py-3 px-4 border border-slate-200 rounded-xl font-bold text-slate-600 hover:bg-slate-50"
-                >
-                  Cancel
-                </button>
-                <button 
-                  type="submit"
-                  className="flex-1 py-3 px-4 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 shadow-lg shadow-indigo-100"
-                >
-                  Publish Notice
-                </button>
-              </div>
-            </form>
-          </div>
+          </form>
         </div>
       )}
     </div>
