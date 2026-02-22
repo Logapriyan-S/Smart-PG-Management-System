@@ -1,16 +1,22 @@
 from flask import Flask, request, jsonify, send_from_directory
+from flask_cors import CORS
 import json
 import os
-import mimetypes
 import uuid 
 from datetime import datetime
+from dotenv import load_dotenv
 
-mimetypes.add_type('application/javascript', '.tsx')
-mimetypes.add_type('application/javascript', '.ts')
+# Load environment variables from .env file
+load_dotenv()
 
-app = Flask(__name__, static_folder='.', static_url_path='')
+# We point static_folder to 'dist' (where React builds its files)
+app = Flask(__name__, static_folder='dist', static_url_path='')
+CORS(app) # Enable CORS for development
+
 DB_PATH = 'database.json'
+GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
 
+# --- DATABASE HELPERS ---
 def load_db():
     if not os.path.exists(DB_PATH):
         return {"residents": [], "complaints": [], "notices": [], "menu": {}}
@@ -28,10 +34,18 @@ def save_db(data):
     with open(DB_PATH, 'w') as f:
         json.dump(data, f, indent=4)
 
-@app.route('/')
-def index():
-    return send_from_directory('.', 'index.html')
+# --- AI ASSISTANT ENDPOINT ---
+@app.route('/api/chat', methods=['POST'])
+def chat():
+    # This is where your backend will talk to Gemini using your hidden API Key
+    if not GEMINI_API_KEY:
+        return jsonify({"error": "AI API Key not configured"}), 500
+    
+    user_message = request.json.get('message')
+    # logic to call Gemini API would go here...
+    return jsonify({"reply": f"Backend received: {user_message}. AI Logic connected."})
 
+# --- AUTH & API ROUTES ---
 @app.route('/api/login', methods=['POST'])
 def login():
     credentials = request.json
@@ -119,6 +133,7 @@ def handle_complaints():
         save_db(db)
         return jsonify(data), 201
     return jsonify(db.get('complaints', []))
+
 @app.route('/api/complaints/<complaint_id>', methods=['PUT'])
 def update_complaint(complaint_id):
     db = load_db()
@@ -139,5 +154,17 @@ def handle_menu():
         return jsonify(db['menu']), 200
     return jsonify(db.get('menu', {}))
 
+# --- OPTION 1: SERVE REACT ---
+# This serves the React build for the home page and any frontend routes
+@app.route('/', defaults={'path': ''})
+@app.route('/<path:path>')
+def serve(path):
+    if path != "" and os.path.exists(app.static_folder + '/' + path):
+        return send_from_directory(app.static_folder, path)
+    else:
+        return send_from_directory(app.static_folder, 'index.html')
+
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    # Use environment variable for port, default to 5000
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port, debug=False)
