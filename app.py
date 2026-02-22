@@ -6,20 +6,24 @@ import uuid
 from datetime import datetime
 from dotenv import load_dotenv
 
-# Load environment variables from .env file
+# Load environment variables for local development
 load_dotenv()
 
-# We point static_folder to 'dist' (where React builds its files)
+# Point static_folder to 'dist' where Vite builds your React files
 app = Flask(__name__, static_folder='dist', static_url_path='')
-CORS(app) # Enable CORS for development
+CORS(app) 
 
+# Define database path
 DB_PATH = 'database.json'
 GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
 
 # --- DATABASE HELPERS ---
 def load_db():
     if not os.path.exists(DB_PATH):
-        return {"residents": [], "complaints": [], "notices": [], "menu": {}}
+        # Create a fresh database if it doesn't exist on the server
+        initial_data = {"residents": [], "complaints": [], "notices": [], "menu": {}}
+        save_db(initial_data)
+        return initial_data
     try:
         with open(DB_PATH, 'r') as f:
             content = f.read().strip()
@@ -34,18 +38,15 @@ def save_db(data):
     with open(DB_PATH, 'w') as f:
         json.dump(data, f, indent=4)
 
-# --- AI ASSISTANT ENDPOINT ---
+# --- API ROUTES ---
+
 @app.route('/api/chat', methods=['POST'])
 def chat():
-    # This is where your backend will talk to Gemini using your hidden API Key
     if not GEMINI_API_KEY:
         return jsonify({"error": "AI API Key not configured"}), 500
-    
     user_message = request.json.get('message')
-    # logic to call Gemini API would go here...
     return jsonify({"reply": f"Backend received: {user_message}. AI Logic connected."})
 
-# --- AUTH & API ROUTES ---
 @app.route('/api/login', methods=['POST'])
 def login():
     credentials = request.json
@@ -53,9 +54,7 @@ def login():
     email = credentials.get('email')
     password = credentials.get('password')
     target_role = credentials.get('role')
-
     user = next((r for r in db['residents'] if r['email'] == email and r.get('password') == password), None)
-    
     if user:
         if user.get('role') != target_role:
             return jsonify({"error": f"Unauthorized for {target_role.lower()} access"}), 403
@@ -91,7 +90,6 @@ def update_user(user_id):
         db['residents'] = [r for r in db['residents'] if r['id'] != user_id]
         save_db(db)
         return jsonify({"message": "Deleted"}), 200
-        
     updated_data = request.json
     for i, res in enumerate(db['residents']):
         if res['id'] == user_id:
@@ -154,17 +152,20 @@ def handle_menu():
         return jsonify(db['menu']), 200
     return jsonify(db.get('menu', {}))
 
-# --- OPTION 1: SERVE REACT ---
-# This serves the React build for the home page and any frontend routes
+# --- OPTION 1: SERVE REACT SPA ---
+# This serves the React build for the home page and ensures 
+# client-side routing works by sending unknowns back to index.html
 @app.route('/', defaults={'path': ''})
 @app.route('/<path:path>')
 def serve(path):
-    if path != "" and os.path.exists(app.static_folder + '/' + path):
+    # Check if the requested path exists as a physical file in 'dist'
+    if path != "" and os.path.exists(os.path.join(app.static_folder, path)):
         return send_from_directory(app.static_folder, path)
     else:
+        # Otherwise, let React handle it
         return send_from_directory(app.static_folder, 'index.html')
 
 if __name__ == '__main__':
-    # Use environment variable for port, default to 5000
+    # Render assigns a dynamic PORT environment variable
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=False)
